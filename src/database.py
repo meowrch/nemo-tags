@@ -1,3 +1,4 @@
+import os
 import json
 import secrets
 from pathlib import Path
@@ -30,7 +31,12 @@ class TagDatabase:
             data = {}
         
         self.tags = data.get("tags", [])
-        self.index = data.get("index", {})
+        raw_index = data.get("index", {})
+
+        # Разворачиваем алиасы при загрузке
+        self.index = {}
+        for tag_id, paths in raw_index.items():
+            self.index[tag_id] = [self._expand_path(p) for p in paths]
 
     def _save(self):
         DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -132,3 +138,7 @@ class TagDatabase:
 
     def flush(self):
         self._save()
+
+    def _expand_path(self, path: str) -> str:
+        """Преобразует $HOME и ~ в абсолютный путь"""
+        return os.path.expanduser(path.replace("$HOME", "~"))
